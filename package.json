@@ -1,21 +1,13 @@
 {
   "name": "proto",
-  "module": "bot.ts",
-  "type": "module",
-  "private": true,
   "scripts": {
-    "start": "bun run bot.ts",
-    "dev": "bun run --hot bot.ts",
-    "deploy": "bun run deploy-commands.ts"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.2.4",
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "dev": "bun run --hot bot.ts"
   },
   "dependencies": {
-    "discord.js": "^14.22.1"
+    "discord.js": "^14.22.1",
+    "hono": "^4.9.7"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
   }
 }
