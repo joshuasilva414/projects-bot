@@ -5,15 +5,17 @@ import {
   Collection,
   Events,
   GatewayIntentBits,
+  GuildMember,
   MessageFlags,
 } from "discord.js";
 
 import { Hono } from "hono";
 import { serve } from "bun";
+import { getGuildMemberByUsername } from "./lib";
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.commands = new Collection();
+(client as any).commands = new Collection();
 
 const foldersPath = path.join(__dirname, "commands");
 const commandFolders = fs.readdirSync(foldersPath);
@@ -27,10 +29,10 @@ for (const folder of commandFolders) {
     const filePath = path.join(commandsPath, file);
     const command = require(filePath);
     // Set a new item in the Collection with the key as the command name and the value as the exported module
-    if ("data" in command && "execute" in command) {
-      client.commands.set(command.data.name, command);
+    if (command?.data && command?.execute) {
+      (client as any).commands.set(command.data.name, command);
     } else {
-      console.log(
+      console.warn(
         `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
       );
     }
@@ -40,7 +42,7 @@ for (const folder of commandFolders) {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isCommand()) return;
 
-  const command = client.commands.get(interaction.commandName);
+  const command = (client as any).commands.get(interaction.commandName);
 
   if (!command) return;
 
@@ -77,12 +79,13 @@ app.get("/", (c) => c.text("Hono!"));
 app.get("/roles/:username", async (c) => {
   const username = c.req.param("username");
 
-  const member = await guild.members.fetch(username);
+  const member = await getGuildMemberByUsername(client, username);
+
   if (!member) {
     return c.json({ error: "User not found" }, 404);
   }
 
-  const roles = member.roles.cache;
+  const roles = member.roles.cache.values();
 
   return c.json({
     username: member.user.username,
@@ -93,4 +96,29 @@ app.get("/roles/:username", async (c) => {
 serve({
   fetch: app.fetch,
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
+});
+
+app.post("/setRole", async (c) => {
+  const body = await c.req.json();
+  const role = body.role;
+  const username = body.username;
+
+  if (!role || !username) {
+    return c.json(
+      {
+        error: "Role and username are required",
+      },
+      400
+    );
+  }
+
+  const member = await getGuildMemberByUsername(client, username as string);
+
+  if (!member) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  await member.roles.add(role as string);
+
+  return c.json({ message: "Role added" }, 200);
 });
