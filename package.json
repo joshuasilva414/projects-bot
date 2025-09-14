@@ -1,7 +1,9 @@
 {
   "name": "proto",
   "scripts": {
-    "dev": "bun run --hot bot.ts"
+    "start": "bun run bot.ts",
+    "dev": "bun run --hot bot.ts",
+    "deploy": "bun run deploy-commands.ts"
   },
   "dependencies": {
     "discord.js": "^14.22.1",
